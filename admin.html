@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
+<title>Voucher Store — Admin Panel</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<style>
+  :root{
+    --bg:#0b1220;
+    --panel:#111b2e;
+    --panel-2:#0f1830;
+    --line:#1f2c46;
+    --text:#e7edf7;
+    --muted:#8a97b3;
+    --blue:#2f7dfa;
+    --blue-dim:#1a4fa0;
+    --green:#22c58b;
+    --green-dim:#158a61;
+    --red:#ef5164;
+    --amber:#f5a623;
+    --radius:12px;
+    font-family:'Segoe UI',system-ui,-apple-system,sans-serif;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--text);min-height:100vh;}
+  a{color:inherit;}
+  ::-webkit-scrollbar{width:8px;height:8px;}
+  ::-webkit-scrollbar-thumb{background:var(--line);border-radius:8px;}
+
+  /* ---------- LOGIN ---------- */
+  #loginScreen{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;}
+  .loginCard{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:36px 30px;width:100%;max-width:360px;}
+  .loginCard h1{font-size:20px;margin:0 0 4px;display:flex;align-items:center;gap:10px;}
+  .loginCard p{color:var(--muted);font-size:13px;margin:0 0 24px;}
+  .field{margin-bottom:14px;}
+  .field label{display:block;font-size:12px;color:var(--muted);margin-bottom:6px;}
+  .field input, .field select, .field textarea{
+    width:100%;padding:10px 12px;border-radius:8px;border:1px solid var(--line);
+    background:var(--panel-2);color:var(--text);font-size:14px;outline:none;
+  }
+  .field input:focus, .field select:focus, .field textarea:focus{border-color:var(--blue);}
+  .btn{
+    display:inline-flex;align-items:center;gap:8px;justify-content:center;
+    padding:10px 16px;border-radius:8px;border:none;font-weight:600;font-size:13px;
+    cursor:pointer;transition:.15s transform, .15s opacity;
+  }
+  .btn:active{transform:scale(.97);}
+  .btn-blue{background:var(--blue);color:#fff;}
+  .btn-green{background:var(--green);color:#04241a;}
+  .btn-red{background:var(--red);color:#2a0006;}
+  .btn-ghost{background:transparent;color:var(--muted);border:1px solid var(--line);}
+  .btn-block{width:100%;}
+  #loginError{color:var(--red);font-size:12px;margin-top:10px;min-height:16px;}
+
+  /* ---------- SHELL ---------- */
+  #app{display:none;min-height:100vh;grid-template-columns:220px 1fr;}
+  #app.show{display:grid;}
+  aside{background:var(--panel);border-right:1px solid var(--line);padding:18px 12px;position:sticky;top:0;height:100vh;overflow-y:auto;}
+  .brand{display:flex;align-items:center;gap:10px;padding:6px 10px 20px;font-weight:700;font-size:15px;}
+  .brand .dot{width:10px;height:10px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green);}
+  nav button{
+    width:100%;text-align:left;background:transparent;border:none;color:var(--muted);
+    padding:10px 12px;border-radius:8px;font-size:13px;cursor:pointer;display:flex;align-items:center;gap:10px;margin-bottom:2px;
+  }
+  nav button i{width:16px;text-align:center;}
+  nav button:hover{background:var(--panel-2);color:var(--text);}
+  nav button.active{background:linear-gradient(90deg,var(--blue-dim),transparent);color:#fff;border-left:2px solid var(--blue);}
+  main{padding:22px 26px 60px;overflow-x:hidden;}
+  header.topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:10px;}
+  header.topbar h2{margin:0;font-size:19px;}
+  .grid{display:grid;gap:14px;}
+  .cards{grid-template-columns:repeat(auto-fit,minmax(170px,1fr));}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:16px;}
+  .card .k{color:var(--muted);font-size:12px;margin-bottom:6px;}
+  .card .v{font-size:24px;font-weight:700;}
+  .card.blue{border-top:3px solid var(--blue);}
+  .card.green{border-top:3px solid var(--green);}
+  .card.amber{border-top:3px solid var(--amber);}
+  .card.red{border-top:3px solid var(--red);}
+
+  table{width:100%;border-collapse:collapse;font-size:13px;}
+  th,td{padding:9px 10px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap;}
+  th{color:var(--muted);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.04em;}
+  tr:hover td{background:var(--panel-2);}
+  .tableWrap{overflow-x:auto;background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:6px;}
+  .pill{padding:3px 9px;border-radius:99px;font-size:11px;font-weight:700;display:inline-block;}
+  .pill.PAID,.pill.DELIVERED,.pill.success,.pill.approved{background:rgba(34,197,139,.15);color:var(--green);}
+  .pill.PAYMENT_PENDING,.pill.pending{background:rgba(245,166,35,.15);color:var(--amber);}
+  .pill.FAILED,.pill.CANCELLED,.pill.rejected,.pill.blocked{background:rgba(239,81,100,.15);color:var(--red);}
+
+  .toolbar{display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;align-items:center;}
+  .toolbar input[type=text],.toolbar input[type=search]{
+    padding:9px 12px;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--text);font-size:13px;min-width:200px;
+  }
+  .section{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:18px;margin-bottom:18px;}
+  .section h3{margin:0 0 14px;font-size:14px;color:var(--blue);}
+  .formGrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;align-items:end;}
+  .miniBtn{padding:5px 10px;font-size:11px;border-radius:6px;border:1px solid var(--line);background:var(--panel-2);color:var(--text);cursor:pointer;margin-right:4px;}
+  .miniBtn:hover{border-color:var(--blue);}
+  .empty{color:var(--muted);font-size:13px;padding:30px;text-align:center;}
+  .toast{position:fixed;bottom:20px;right:20px;background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--green);padding:12px 16px;border-radius:8px;font-size:13px;z-index:999;box-shadow:0 8px 24px rgba(0,0,0,.4);}
+  .toast.err{border-left-color:var(--red);}
+  .switch{position:relative;display:inline-block;width:38px;height:20px;}
+  .switch input{opacity:0;width:0;height:0;}
+  .slider{position:absolute;cursor:pointer;inset:0;background:var(--line);border-radius:20px;transition:.15s;}
+  .slider:before{content:"";position:absolute;height:14px;width:14px;left:3px;bottom:3px;background:#fff;border-radius:50%;transition:.15s;}
+  input:checked + .slider{background:var(--green);}
+  input:checked + .slider:before{transform:translateX(18px);}
+
+  @media(max-width:800px){
+    #app.show{display:block;}
+    aside{position:static;height:auto;display:flex;overflow-x:auto;gap:4px;}
+    nav{display:flex;gap:4px;}
+    .brand{display:none;}
+    main{padding:16px;}
+  }
+</style>
+</head>
+<body>
+
+<div id="loginScreen">
+  <div class="loginCard">
+    <h1><i class="fa-solid fa-ticket" style="color:var(--blue)"></i> Admin Panel</h1>
+    <p>Voucher Store — sign in to continue</p>
+    <div class="field"><label>Username</label><input id="loginUser" type="text" autocomplete="username"/></div>
+    <div class="field"><label>Password</label><input id="loginPass" type="password" autocomplete="current-password"/></div>
+    <button class="btn btn-blue btn-block" onclick="doLogin()"><i class="fa-solid fa-right-to-bracket"></i> Sign In</button>
+    <div id="loginError"></div>
+  </div>
+</div>
+
+<div id="app">
+  <aside>
+    <div class="brand"><span class="dot"></span> Voucher Admin</div>
+    <nav id="navList"></nav>
+  </aside>
+  <main>
+    <header class="topbar">
+      <h2 id="pageTitle">Dashboard</h2>
+      <button class="btn btn-ghost" onclick="logout()"><i class="fa-solid fa-power-off"></i> Logout</button>
+    </header>
+    <div id="pageContent"></div>
+  </main>
+</div>
+
+<script>
+/* =====================================================================
+   Minimal vanilla-JS SPA. No frameworks. All data via fetch() to /api/*.
+   ===================================================================== */
+const API = ''; // same origin
+let TOKEN = localStorage.getItem('admin_token') || '';
+
+const NAV = [
+  {id:'dashboard', label:'Dashboard', icon:'fa-gauge-high'},
+  {id:'orders', label:'Orders', icon:'fa-receipt'},
+  {id:'payments', label:'Payments', icon:'fa-credit-card'},
+  {id:'products', label:'Products', icon:'fa-box'},
+  {id:'categories', label:'Categories', icon:'fa-layer-group'},
+  {id:'vouchers', label:'Voucher Inventory', icon:'fa-key'},
+  {id:'users', label:'Users', icon:'fa-users'},
+  {id:'requiredChannels', label:'Required Channels', icon:'fa-lock'},
+  {id:'publicChannels', label:'Public Channels', icon:'fa-bullhorn'},
+  {id:'promoCodes', label:'Promo Codes', icon:'fa-tag'},
+  {id:'resellers', label:'Resellers', icon:'fa-handshake'},
+  {id:'reviews', label:'Reviews', icon:'fa-star'},
+  {id:'buttons', label:'Bot Buttons', icon:'fa-table-cells'},
+  {id:'settings', label:'Settings', icon:'fa-gear'},
+  {id:'broadcast', label:'Broadcast', icon:'fa-tower-broadcast'},
+];
+
+function toast(msg, isErr=false){
+  const t=document.createElement('div');
+  t.className='toast'+(isErr?' err':'');
+  t.textContent=msg;
+  document.body.appendChild(t);
+  setTimeout(()=>t.remove(),3000);
+}
+
+async function api(path, opts={}){
+  const res = await fetch(API+path, {
+    ...opts,
+    headers:{'Content-Type':'application/json', 'Authorization':'Bearer '+TOKEN, ...(opts.headers||{})}
+  });
+  if(res.status===401){ logout(); throw new Error('Unauthorized'); }
+  const data = await res.json().catch(()=>({}));
+  if(!res.ok) throw new Error(data.error||'Request failed');
+  return data;
+}
+
+async function doLogin(){
+  const username = document.getElementById('loginUser').value.trim();
+  const password = document.getElementById('loginPass').value;
+  try{
+    const data = await api('/api/login', {method:'POST', body:JSON.stringify({username,password})});
+    TOKEN = data.token;
+    localStorage.setItem('admin_token', TOKEN);
+    boot();
+  }catch(e){
+    document.getElementById('loginError').textContent = '❌ '+e.message;
+  }
+}
+function logout(){
+  TOKEN=''; localStorage.removeItem('admin_token');
+  document.getElementById('app').classList.remove('show');
+  document.getElementById('loginScreen').style.display='flex';
+}
+
+function boot(){
+  document.getElementById('loginScreen').style.display='none';
+  document.getElementById('app').classList.add('show');
+  const nav = document.getElementById('navList');
+  nav.innerHTML = NAV.map(n=>`<button data-id="${n.id}" onclick="go('${n.id}')"><i class="fa-solid ${n.icon}"></i> ${n.label}</button>`).join('');
+  go('dashboard');
+}
+if(TOKEN) boot();
+
+function setActive(id){
+  document.querySelectorAll('#navList button').forEach(b=>b.classList.toggle('active', b.dataset.id===id));
+}
+
+async function go(id){
+  setActive(id);
+  document.getElementById('pageTitle').textContent = NAV.find(n=>n.id===id).label;
+  const el = document.getElementById('pageContent');
+  el.innerHTML = '<div class="empty">Loading…</div>';
+  try{
+    el.innerHTML = await RENDER[id]();
+  }catch(e){
+    el.innerHTML = `<div class="empty">⚠️ ${e.message}</div>`;
+  }
+}
+
+/* ---------------------------------------------------------------- */
+const RENDER = {};
+
+RENDER.dashboard = async () => {
+  const d = await api('/api/dashboard');
+  const cards = [
+    ['Total Users', d.totalUsers, 'blue'], ['Active Users', d.activeUsers, 'blue'],
+    ['Total Orders', d.totalOrders, 'blue'], ["Today's Orders", d.todayOrders, 'blue'],
+    ["Today's Revenue", '₹'+d.todayRevenue, 'green'], ['Total Revenue', '₹'+d.totalRevenue, 'green'],
+    ['Pending Payments', d.pendingPayments, 'amber'], ['Successful Payments', d.successfulPayments, 'green'],
+    ['Failed Payments', d.failedPayments, 'red'], ['Available Stock', d.totalStock, 'blue'],
+    ['Sold Vouchers', d.soldVouchers, 'green'], ['Low Stock Products', d.lowStockProducts, 'red'],
+  ];
+  return `<div class="grid cards">${cards.map(([k,v,c])=>`<div class="card ${c}"><div class="k">${k}</div><div class="v">${v}</div></div>`).join('')}</div>`;
+};
+
+RENDER.orders = async () => {
+  const orders = await api('/api/orders');
+  const rows = orders.map(o=>`<tr>
+    <td>${o.id}</td><td>${o.userId}</td><td>${o.productName}</td><td>${o.quantity}</td><td>₹${o.amount}</td>
+    <td><span class="pill ${o.status}">${o.status}</span></td><td>${new Date(o.createdAt).toLocaleString()}</td>
+    <td>${o.txnRef||'—'}</td>
+    <td>
+      ${o.status==='DELIVERED'?`<button class="miniBtn" onclick="resendOrder('${o.id}')">Resend</button>`:''}
+      ${o.status==='PAYMENT_PENDING'?`<button class="miniBtn" onclick="cancelOrder('${o.id}')">Cancel</button><button class="miniBtn" onclick="manualPaid('${o.id}')">Mark Paid</button>`:''}
+    </td></tr>`).join('');
+  return `<div class="toolbar"><input type="search" placeholder="Search order/user/txn…" oninput="filterTable(this,'ordersTable')"></div>
+    <div class="tableWrap"><table id="ordersTable"><thead><tr><th>Order</th><th>User</th><th>Product</th><th>Qty</th><th>Amount</th><th>Status</th><th>Created</th><th>Txn Ref</th><th>Actions</th></tr></thead>
+    <tbody>${rows||'<tr><td colspan=9 class="empty">No orders yet</td></tr>'}</tbody></table></div>`;
+};
+async function resendOrder(id){ try{ await api(`/api/orders/${id}/resend`,{method:'POST'}); toast('Voucher resent'); go('orders'); }catch(e){ toast(e.message,true);} }
+async function cancelOrder(id){ if(!confirm('Cancel this pending order and release its voucher?'))return; try{ await api(`/api/orders/${id}/cancel`,{method:'POST'}); toast('Order cancelled'); go('orders'); }catch(e){ toast(e.message,true);} }
+async function manualPaid(id){ const reason=prompt('Reason for manual payment confirmation (required, logged):'); if(!reason)return; try{ await api(`/api/orders/${id}/manual-mark-paid`,{method:'POST',body:JSON.stringify({reason})}); toast('Order marked paid & delivered'); go('orders'); }catch(e){ toast(e.message,true);} }
+
+RENDER.payments = async () => {
+  const list = await api('/api/payments');
+  const rows = list.map(p=>`<tr><td>${p.id}</td><td>${p.orderId}</td><td>${p.userId}</td><td>₹${p.expectedAmount}</td>
+    <td><span class="pill ${p.status==='SUCCESS'||p.status==='TXN_SUCCESS'?'success':'pending'}">${p.status}</span></td>
+    <td>${p.txnRef||'—'}</td><td>${new Date(p.createdAt).toLocaleString()}</td>
+    <td>${p.verifiedAt? new Date(p.verifiedAt).toLocaleString():'—'}</td></tr>`).join('');
+  return `<div class="tableWrap"><table><thead><tr><th>Payment</th><th>Order</th><th>User</th><th>Expected</th><th>Status</th><th>Txn Ref</th><th>Created</th><th>Verified</th></tr></thead>
+    <tbody>${rows||'<tr><td colspan=8 class="empty">No payments yet</td></tr>'}</tbody></table></div>`;
+};
+
+RENDER.categories = async () => {
+  const list = await api('/api/categories');
+  const rows = list.map(c=>`<tr><td>${c.emoji||''} ${c.name}</td><td>${c.position??0}</td>
+    <td><label class="switch"><input type="checkbox" ${c.enabled?'checked':''} onchange="toggleField('categories','${c.id}','enabled',this.checked)"><span class="slider"></span></label></td>
+    <td><button class="miniBtn" onclick="delItem('categories','${c.id}')">Delete</button></td></tr>`).join('');
+  return `<div class="section"><h3>Add Category</h3>
+    <div class="formGrid">
+      <div class="field"><label>Emoji</label><input id="cat_emoji" placeholder="🎮"></div>
+      <div class="field"><label>Name</label><input id="cat_name" placeholder="Gaming"></div>
+      <div class="field"><label>Position</label><input id="cat_pos" type="number" value="0"></div>
+      <button class="btn btn-blue" onclick="addCategory()"><i class="fa-solid fa-plus"></i> Add</button>
+    </div></div>
+    <div class="tableWrap"><table><thead><tr><th>Category</th><th>Position</th><th>Enabled</th><th></th></tr></thead>
+    <tbody>${rows||'<tr><td colspan=4 class="empty">No categories yet</td></tr>'}</tbody></table></div>`;
+};
+async function addCategory(){
+  const emoji=document.getElementById('cat_emoji').value.trim();
+  const name=document.getElementById('cat_name').value.trim();
+  const position=parseInt(document.getElementById('cat_pos').value||0,10);
+  if(!name){ toast('Name required',true); return; }
+  try{ await api('/api/categories',{method:'POST',body:JSON.stringify({emoji,name,position,enabled:true})}); toast('Category added'); go('categories'); }catch(e){toast(e.message,true);}
+}
+
+RENDER.products = async () => {
+  const [products, categories] = await Promise.all([api('/api/products'), api('/api/categories')]);
+  const catName = id => (categories.find(c=>c.id===id)||{}).name || '—';
+  const rows = products.map(p=>`<tr><td>${p.name}</td><td>${catName(p.categoryId)}</td><td>₹${p.discountPrice||p.price}</td><td>${p.stockCached??'-'}</td>
+    <td><label class="switch"><input type="checkbox" ${p.enabled?'checked':''} onchange="toggleField('products','${p.id}','enabled',this.checked)"><span class="slider"></span></label></td>
+    <td><button class="miniBtn" onclick="delItem('products','${p.id}')">Delete</button></td></tr>`).join('');
+  const catOptions = categories.map(c=>`<option value="${c.id}">${c.emoji} ${c.name}</option>`).join('');
+  return `<div class="section"><h3>Add Product</h3>
+    <div class="formGrid">
+      <div class="field"><label>Category</label><select id="p_cat">${catOptions}</select></div>
+      <div class="field"><label>Name</label><input id="p_name"></div>
+      <div class="field"><label>Price (₹)</label><input id="p_price" type="number"></div>
+      <div class="field"><label>Discount Price (₹, optional)</label><input id="p_disc" type="number"></div>
+      <div class="field"><label>Validity</label><input id="p_valid" placeholder="30 days"></div>
+      <div class="field"><label>Low stock alert</label><input id="p_low" type="number" value="5"></div>
+    </div>
+    <div class="field" style="margin-top:10px"><label>Description</label><textarea id="p_desc" rows="2"></textarea></div>
+    <div class="field"><label>Terms</label><textarea id="p_terms" rows="2"></textarea></div>
+    <button class="btn btn-blue" onclick="addProduct()"><i class="fa-solid fa-plus"></i> Add Product</button>
+    </div>
+    <div class="tableWrap"><table><thead><tr><th>Product</th><th>Category</th><th>Price</th><th>Stock</th><th>Enabled</th><th></th></tr></thead>
+    <tbody>${rows||'<tr><td colspan=6 class="empty">No products yet</td></tr>'}</tbody></table></div>`;
+};
+async function addProduct(){
+  const body = {
+    categoryId: document.getElementById('p_cat').value,
+    name: document.getElementById('p_name').value.trim(),
+    price: parseFloat(document.getElementById('p_price').value||0),
+    discountPrice: document.getElementById('p_disc').value? parseFloat(document.getElementById('p_disc').value):null,
+    validity: document.getElementById('p_valid').value.trim(),
+    lowStockThreshold: parseInt(document.getElementById('p_low').value||5,10),
+    description: document.getElementById('p_desc').value.trim(),
+    terms: document.getElementById('p_terms').value.trim(),
+    enabled:true, position:0,
+  };
+  if(!body.categoryId||!body.name||!body.price){ toast('Category, name and price are required',true); return; }
+  try{ await api('/api/products',{method:'POST',body:JSON.stringify(body)}); toast('Product added'); go('products'); }catch(e){toast(e.message,true);}
+}
+
+RENDER.vouchers = async () => {
+  const products = await api('/api/products');
+  const options = products.map(p=>`<option value="${p.id}">${p.name}</option>`).join('');
+  return `<div class="section"><h3>Bulk Add Voucher Codes</h3>
+    <div class="field"><label>Product</label><select id="v_prod">${options}</select></div>
+    <div class="field"><label>Codes (one per line)</label><textarea id="v_codes" rows="6" placeholder="CODE-0001\nCODE-0002"></textarea></div>
+    <button class="btn btn-blue" onclick="bulkAddVouchers()"><i class="fa-solid fa-upload"></i> Upload Codes</button>
+    <div id="v_result" style="margin-top:10px;color:var(--muted);font-size:13px;"></div>
+    </div>
+    <div class="section"><h3>Check Stock</h3>
+    <button class="btn btn-ghost" onclick="checkStock()"><i class="fa-solid fa-magnifying-glass"></i> View Stock For Selected Product</button>
+    <div id="v_stock" style="margin-top:12px;"></div>
+    </div>`;
+};
+async function bulkAddVouchers(){
+  const productId=document.getElementById('v_prod').value;
+  const codes=document.getElementById('v_codes').value;
+  try{
+    const r = await api(`/api/vouchers/${productId}/bulk`,{method:'POST',body:JSON.stringify({codes})});
+    document.getElementById('v_result').textContent = `✅ Added ${r.added} codes. Skipped ${r.duplicates} duplicates.`;
+    document.getElementById('v_codes').value='';
+  }catch(e){ toast(e.message,true); }
+}
+async function checkStock(){
+  const productId=document.getElementById('v_prod').value;
+  const r = await api(`/api/vouchers/${productId}`);
+  document.getElementById('v_stock').innerHTML = `🟢 Available: ${r.available} &nbsp; 🔒 Reserved: ${r.reserved} &nbsp; ✅ Sold: ${r.sold}`;
+}
+
+RENDER.users = async () => {
+  const list = await api('/api/users');
+  const rows = list.map(u=>`<tr><td>${u.id}</td><td>@${u.username||'—'}</td><td>${u.firstName}</td><td>${u.totalPurchases}</td><td>₹${u.totalSpending}</td>
+    <td><span class="pill ${u.blocked?'blocked':'success'}">${u.blocked?'Blocked':'Active'}</span></td>
+    <td><button class="miniBtn" onclick="toggleBlock('${u.id}',${!u.blocked})">${u.blocked?'Unblock':'Block'}</button>
+    <button class="miniBtn" onclick="walletAdjust('${u.id}')">Adjust Wallet</button></td></tr>`).join('');
+  return `<div class="toolbar"><input type="search" placeholder="Search user id / username…" oninput="filterTable(this,'usersTable')"></div>
+    <div class="tableWrap"><table id="usersTable"><thead><tr><th>ID</th><th>Username</th><th>Name</th><th>Orders</th><th>Spent</th><th>Status</th><th>Actions</th></tr></thead>
+    <tbody>${rows||'<tr><td colspan=7 class="empty">No users yet</td></tr>'}</tbody></table></div>`;
+};
+async function toggleBlock(id,blocked){ try{ await api(`/api/users/${id}/block`,{method:'POST',body:JSON.stringify({blocked})}); toast(blocked?'User blocked':'User unblocked'); go('users'); }catch(e){toast(e.message,true);} }
+async function walletAdjust(id){
+  const amount=parseFloat(prompt('Amount (₹):')||0); if(!amount) return;
+  const type=confirm('OK = Credit, Cancel = Debit')?'CREDIT':'DEBIT';
+  const note=prompt('Note/reason:')||'Manual adjustment';
+  try{ await api(`/api/users/${id}/wallet-adjust`,{method:'POST',body:JSON.stringify({amount,type,note})}); toast('Wallet updated'); }catch(e){toast(e.message,true);}
+}
+
+function channelSection(collectionId, title){
+  return async () => {
+    const list = await api(`/api/${collectionId}`);
+    const rows = list.map(c=>`<tr><td>${c.name}</td><td>${c.username||c.chatId||'—'}</td><td>${c.link||''}</td><td>${c.order??0}</td>
+      <td><label class="switch"><input type="checkbox" ${c.enabled?'checked':''} onchange="toggleField('${collectionId}','${c.id}','enabled',this.checked)"><span class="slider"></span></label></td>
+      <td><button class="miniBtn" onclick="delItem('${collectionId}','${c.id}')">Delete</button></td></tr>`).join('');
+    return `<div class="section"><h3>Add ${title}</h3>
+      <div class="formGrid">
+        <div class="field"><label>Display Name</label><input id="${collectionId}_name"></div>
+        ${collectionId==='requiredChannels'?`<div class="field"><label>Chat ID or @username (for membership check)</label><input id="${collectionId}_chatid" placeholder="@mychannel or -1001234567890"></div>`:''}
+        <div class="field"><label>Join Link</label><input id="${collectionId}_link" placeholder="https://t.me/mychannel"></div>
+        <div class="field"><label>Order</label><input id="${collectionId}_order" type="number" value="0"></div>
+        <button class="btn btn-blue" onclick="addChannel('${collectionId}')"><i class="fa-solid fa-plus"></i> Add</button>
+      </div></div>
+      <div class="tableWrap"><table><thead><tr><th>Name</th><th>Chat ID/Username</th><th>Link</th><th>Order</th><th>Enabled</th><th></th></tr></thead>
+      <tbody>${rows||'<tr><td colspan=6 class="empty">None added yet</td></tr>'}</tbody></table></div>`;
+  };
+}
+RENDER.requiredChannels = channelSection('requiredChannels','Required Channel');
+RENDER.publicChannels = channelSection('publicChannels','Public Channel');
+async function addChannel(collectionId){
+  const name=document.getElementById(`${collectionId}_name`).value.trim();
+  const link=document.getElementById(`${collectionId}_link`).value.trim();
+  const order=parseInt(document.getElementById(`${collectionId}_order`).value||0,10);
+  const body={name,link,order,enabled:true};
+  if(collectionId==='requiredChannels'){
+    const chatid=document.getElementById(`${collectionId}_chatid`).value.trim();
+    body.chatId = chatid.startsWith('@')?undefined:chatid;
+    body.username = chatid.startsWith('@')?chatid:undefined;
+  }
+  if(!name||!link){ toast('Name and link required',true); return; }
+  try{ await api(`/api/${collectionId}`,{method:'POST',body:JSON.stringify(body)}); toast('Channel added'); go(collectionId); }catch(e){toast(e.message,true);}
+}
+
+RENDER.promoCodes = async () => {
+  const list = await api('/api/promoCodes');
+  const rows = list.map(p=>`<tr><td>${p.code}</td><td>${p.discountType==='percentage'?p.discountValue+'%':'₹'+p.discountValue}</td><td>${p.usageLimit||'∞'}</td><td>${p.perUserLimit||'∞'}</td>
+    <td><label class="switch"><input type="checkbox" ${p.active?'checked':''} onchange="toggleField('promoCodes','${p.id}','active',this.checked)"><span class="slider"></span></label></td>
+    <td><button class="miniBtn" onclick="delItem('promoCodes','${p.id}')">Delete</button></td></tr>`).join('');
+  return `<div class="section"><h3>Create Promo Code</h3>
+    <div class="formGrid">
+      <div class="field"><label>Code</label><input id="pc_code" style="text-transform:uppercase"></div>
+      <div class="field"><label>Type</label><select id="pc_type"><option value="fixed">Fixed ₹</option><option value="percentage">Percentage %</option></select></div>
+      <div class="field"><label>Value</label><input id="pc_value" type="number"></div>
+      <div class="field"><label>Min Order (₹)</label><input id="pc_min" type="number" value="0"></div>
+      <div class="field"><label>Max Discount (₹)</label><input id="pc_max" type="number"></div>
+      <div class="field"><label>Usage Limit (total)</label><input id="pc_limit" type="number"></div>
+      <div class="field"><label>Per-user Limit</label><input id="pc_perlimit" type="number" value="1"></div>
+      <button class="btn btn-blue" onclick="addPromo()"><i class="fa-solid fa-plus"></i> Create</button>
+    </div></div>
+    <div class="tableWrap"><table><thead><tr><th>Code</th><th>Discount</th><th>Usage Limit</th><th>Per User</th><th>Active</th><th></th></tr></thead>
+    <tbody>${rows||'<tr><td colspan=6 class="empty">No promo codes yet</td></tr>'}</tbody></table></div>`;
+};
+async function addPromo(){
+  const body={
+    code:document.getElementById('pc_code').value.trim().toUpperCase(),
+    discountType:document.getElementById('pc_type').value,
+    discountValue:parseFloat(document.getElementById('pc_value').value||0),
+    minOrder:parseFloat(document.getElementById('pc_min').value||0),
+    maxDiscount:document.getElementById('pc_max').value?parseFloat(document.getElementById('pc_max').value):null,
+    usageLimit:document.getElementById('pc_limit').value?parseInt(document.getElementById('pc_limit').value,10):null,
+    perUserLimit:parseInt(document.getElementById('pc_perlimit').value||1,10),
+    active:true,
+  };
+  if(!body.code||!body.discountValue){ toast('Code and value required',true); return; }
+  try{ await api('/api/promoCodes',{method:'POST',body:JSON.stringify(body)}); toast('Promo code created'); go('promoCodes'); }catch(e){toast(e.message,true);}
+}
+
+RENDER.resellers = async () => {
+  const users = await api('/api/users');
+  const applicants = users.filter(u=>u.resellerStatus);
+  const rows = applicants.map(u=>`<tr><td>${u.id}</td><td>@${u.username||'—'}</td><td><span class="pill ${u.resellerStatus}">${u.resellerStatus}</span></td>
+    <td>
+      <button class="miniBtn" onclick="resellerStatus('${u.id}','approved')">Approve</button>
+      <button class="miniBtn" onclick="resellerStatus('${u.id}','rejected')">Reject</button>
+      <button class="miniBtn" onclick="resellerStatus('${u.id}','blocked')">Block</button>
+    </td></tr>`).join('');
+  return `<div class="tableWrap"><table><thead><tr><th>User ID</th><th>Username</th><th>Status</th><th>Actions</th></tr></thead>
+    <tbody>${rows||'<tr><td colspan=4 class="empty">No reseller applications yet</td></tr>'}</tbody></table></div>`;
+};
+async function resellerStatus(id,status){ try{ await api(`/api/resellers/${id}/status`,{method:'POST',body:JSON.stringify({status})}); toast('Updated'); go('resellers'); }catch(e){toast(e.message,true);} }
+
+RENDER.reviews = async () => {
+  const list = await api('/api/reviews');
+  const rows = list.map(r=>`<tr><td>${r.userId}</td><td>${'⭐'.repeat(r.rating)}</td><td>${r.text}</td>
+    <td><span class="pill ${r.status}">${r.status}</span></td>
+    <td><button class="miniBtn" onclick="reviewStatus('${r.id}','approved')">Approve</button>
+    <button class="miniBtn" onclick="reviewStatus('${r.id}','rejected')">Reject</button></td></tr>`).join('');
+  return `<div class="tableWrap"><table><thead><tr><th>User</th><th>Rating</th><th>Text</th><th>Status</th><th></th></tr></thead>
+    <tbody>${rows||'<tr><td colspan=5 class="empty">No reviews yet</td></tr>'}</tbody></table></div>`;
+};
+async function reviewStatus(id,status){ try{ await api(`/api/reviews/${id}/status`,{method:'POST',body:JSON.stringify({status})}); toast('Updated'); go('reviews'); }catch(e){toast(e.message,true);} }
+
+RENDER.buttons = async () => {
+  const s = await api('/api/settings');
+  const rows = s.buttons.map((b,i)=>`<tr><td>${b.label}</td><td>${b.action}</td><td>${b.row}</td><td>${b.col}</td>
+    <td><label class="switch"><input type="checkbox" ${b.enabled?'checked':''} onchange="toggleButton(${i},this.checked)"><span class="slider"></span></label></td></tr>`).join('');
+  return `<p style="color:var(--muted);font-size:13px;margin-top:0">Toggle which buttons appear on the bot's main menu — no code changes needed.</p>
+    <div class="tableWrap"><table><thead><tr><th>Button</th><th>Action</th><th>Row</th><th>Col</th><th>Enabled</th></tr></thead>
+    <tbody>${rows}</tbody></table></div>`;
+};
+async function toggleButton(index, enabled){
+  const s = await api('/api/settings');
+  s.buttons[index].enabled = enabled;
+  await api('/api/settings',{method:'PUT',body:JSON.stringify({buttons:s.buttons})});
+  toast('Button visibility updated');
+}
+
+RENDER.settings = async () => {
+  const s = await api('/api/settings');
+  return `<div class="section"><h3>Payment & System</h3>
+    <div class="formGrid">
+      <div class="field"><label>Payment Timeout (minutes)</label><input id="s_timeout" type="number" value="${s.paymentTimeoutMinutes}"></div>
+      <div class="field"><label>Maintenance Mode</label>
+        <label class="switch"><input id="s_maint" type="checkbox" ${s.maintenanceMode?'checked':''}><span class="slider"></span></label>
+      </div>
+    </div></div>
+    <div class="section"><h3>Welcome & Support Messages</h3>
+    <div class="field"><label>Welcome Message (use {name} for first name)</label><textarea id="s_welcome" rows="4">${s.welcomeMessage}</textarea></div>
+    <div class="field"><label>Support Message</label><textarea id="s_support_msg" rows="2">${s.supportMessage}</textarea></div>
+    <div class="formGrid" style="margin-top:10px">
+      <div class="field"><label>Support Username (no @)</label><input id="s_support_user" value="${s.supportUsername}"></div>
+      <div class="field"><label>Support Group Link</label><input id="s_support_group" value="${s.supportGroup}"></div>
+    </div></div>
+    <div class="section"><h3>Referral Program</h3>
+    <div class="formGrid">
+      <div class="field"><label>Enabled</label><label class="switch"><input id="s_ref_enabled" type="checkbox" ${s.referralEnabled?'checked':''}><span class="slider"></span></label></div>
+      <div class="field"><label>Reward Type</label><select id="s_ref_type"><option value="fixed" ${s.referralRewardType==='fixed'?'selected':''}>Fixed ₹</option><option value="percentage" ${s.referralRewardType==='percentage'?'selected':''}>Percentage %</option></select></div>
+      <div class="field"><label>Reward Value</label><input id="s_ref_value" type="number" value="${s.referralRewardValue}"></div>
+      <div class="field"><label>Min Qualifying Purchase (₹)</label><input id="s_ref_min" type="number" value="${s.referralMinPurchase}"></div>
+      <div class="field"><label>Max Reward (₹)</label><input id="s_ref_max" type="number" value="${s.referralMaxReward}"></div>
+    </div></div>
+    <button class="btn btn-green" onclick="saveSettings()"><i class="fa-solid fa-floppy-disk"></i> Save All Settings</button>`;
+};
+async function saveSettings(){
+  const body = {
+    paymentTimeoutMinutes: parseInt(document.getElementById('s_timeout').value||7,10),
+    maintenanceMode: document.getElementById('s_maint').checked,
+    welcomeMessage: document.getElementById('s_welcome').value,
+    supportMessage: document.getElementById('s_support_msg').value,
+    supportUsername: document.getElementById('s_support_user').value,
+    supportGroup: document.getElementById('s_support_group').value,
+    referralEnabled: document.getElementById('s_ref_enabled').checked,
+    referralRewardType: document.getElementById('s_ref_type').value,
+    referralRewardValue: parseFloat(document.getElementById('s_ref_value').value||0),
+    referralMinPurchase: parseFloat(document.getElementById('s_ref_min').value||0),
+    referralMaxReward: parseFloat(document.getElementById('s_ref_max').value||0),
+  };
+  try{ await api('/api/settings',{method:'PUT',body:JSON.stringify(body)}); toast('Settings saved'); }catch(e){toast(e.message,true);}
+}
+
+RENDER.broadcast = async () => {
+  return `<div class="section"><h3>Send Broadcast</h3>
+    <div class="field"><label>Message (Markdown supported)</label><textarea id="b_text" rows="6" placeholder="📢 New vouchers just dropped!"></textarea></div>
+    <button class="btn btn-blue" onclick="sendBroadcast()"><i class="fa-solid fa-paper-plane"></i> Send to All Users</button>
+    <div id="b_result" style="margin-top:12px;color:var(--muted);font-size:13px;"></div>
+    </div>`;
+};
+async function sendBroadcast(){
+  const text=document.getElementById('b_text').value.trim();
+  if(!text){ toast('Message required',true); return; }
+  if(!confirm('Send this message to ALL non-blocked users right now?')) return;
+  document.getElementById('b_result').textContent='Sending…';
+  try{
+    const r = await api('/api/broadcast',{method:'POST',body:JSON.stringify({text})});
+    document.getElementById('b_result').textContent = `✅ Sent: ${r.sent} / ${r.total} — Failed: ${r.failed}`;
+  }catch(e){ toast(e.message,true); }
+}
+
+/* ---------------------------------------------------------------- */
+async function toggleField(collection,id,field,value){
+  try{ await api(`/api/${collection}/${id}`,{method:'PUT',body:JSON.stringify({[field]:value})}); toast('Updated'); }catch(e){toast(e.message,true);}
+}
+async function delItem(collection,id){
+  if(!confirm('Delete this item?')) return;
+  try{ await api(`/api/${collection}/${id}`,{method:'DELETE'}); toast('Deleted'); go(document.querySelector('#navList button.active').dataset.id); }catch(e){toast(e.message,true);}
+}
+function filterTable(input, tableId){
+  const q = input.value.toLowerCase();
+  document.querySelectorAll(`#${tableId} tbody tr`).forEach(tr=>{
+    tr.style.display = tr.textContent.toLowerCase().includes(q) ? '' : 'none';
+  });
+}
+</script>
+</body>
+</html>
